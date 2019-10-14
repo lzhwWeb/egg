@@ -128,6 +128,15 @@ exports.logger = {
 };
 ```
 
+## Format
+Use JSON as the output log format, make it easier to parse.
+```js
+// config/config.${env}.js
+exports.logger = {
+  outputJSON: true,
+};
+```
+
 ## Log Level
 
 Logs are designed in 5 levels, including `NONE`, `DEBUG`, `INFO`, `WARN` and `ERROR`. For inspecting in development, they will also be written into files and printed into terminal as well.
@@ -154,7 +163,7 @@ exports.logger = {
 };
 ```
 
-#### DEBUG Log in Prodction Environment
+#### Debug Log in Production Environment
 
 To avoid some plugin's DEBUG logs printing in the production environment causing performance problems, the production environment prohibits printing DEBUG-level logs by default. If there is a need to print DEBUG logs for debugging in the production environment, you need to set `allowDebugAtProd` configuration to `ture`.
 
@@ -166,9 +175,11 @@ exports.logger = {
 };
 ```
 
-### In terminal
+### In Terminal
 
-By default, Egg will only print out `INFO`, `WARN` and `ERROR` in terminal. `logger.consoleLevel`(default: `INFO`) is defined as the logger level in terminal. Similarly, it can be changed as following:
+By default, Egg will only print out `INFO`, `WARN` and `ERROR` in terminal. (Notice: It only works on `local` and `unittest` env)
+
+- `logger.consoleLevel`: (default: `INFO`) Being defined as the logger level in terminal. Similarly, it can be changed as following:
 
 Print logs in all levels:
 
@@ -188,7 +199,16 @@ exports.logger = {
 };
 ```
 
-## Create your logger
+- Base on performance considerations, console logger will be disabled after app ready at prod mode. however, you can enable it by config. (**Not Recommended**)
+
+```js
+// config/config.${env}.js
+exports.logger = {
+  disableConsoleAfterReady: false,
+};
+```
+
+## Create Your Logger
 
 ### Customized
 
@@ -212,6 +232,30 @@ module.exports = appInfo => {
 ```
 
 Now, you can get loggers via `app.getLogger('xxLogger')` or `ctx.getLogger('xxLogger')`, and the logs printed from those loggers are similar to the ones from `coreLogger`.
+
+### Custom logger formatter
+
+```js
+// config/config.${env}.js
+const path = require('path');
+
+module.exports = appInfo => {
+  return {
+    customLogger: {
+      xxLogger: {
+        file: path.join(appInfo.root, 'logs/xx.log'),
+        formatter(meta) {
+          return `[${meta.date}] ${meta.message}`;
+        },
+        // ctx logger
+        contextFormatter(meta) {
+          return `[${meta.date}] [${meta.ctx.method} ${meta.ctx.url}] ${meta.message}`;
+        },
+      },
+    },
+  };
+};
+```
 
 ### Advanced
 

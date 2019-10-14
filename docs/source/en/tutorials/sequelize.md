@@ -11,17 +11,17 @@ In this example, we will use sequelize to connect to the MySQL data source, so w
 
 ```bash
 brew install mysql
-brew service start mysql
+brew services start mysql
 ```
 
-## Init
+## Initialization
 
-Init project by `egg-init`:
+Init project by `npm`:
 
 ```bash
-egg-init --type=simple --dir=sequelize-project
-cd sequelize-project
-npm i
+$ mkdir sequelize-project && cd sequelize-project
+$ npm init egg --type=simple
+$ npm i
 ```
 
 Install and configure the [egg-sequelize] plugin (which will help us load the defined Model object onto `app` and `ctx` ) and the [mysql2] module:
@@ -65,7 +65,7 @@ exports.sequelize = {
 
 After completing the above configuration, a project using sequelize is initialized. [egg-sequelize] and [sequelize] also support more configuration items, which can be found in their documentation.
 
-## Init Database and Migrations
+## Database and Migrations Initialization
 
 Next, let's temporarily leave the code of the egg project, design and initialize our database. First, we quickly create two databases for development and testing locally using the mysql command:
 
@@ -120,7 +120,7 @@ npx sequelize init:config
 npx sequelize init:migrations
 ```
 
-After the execution, the `database/config.json` file and the `database/migrations`, `database/seeders`, `app/model` directories will be generated. We will modify the contents of `database/config.json`. It was changed to the database configuration used in our project:
+After the execution, the `database/config.json` file and the `database/migrations` directory will be generated. We will modify the contents of `database/config.json`. It was changed to the database configuration used in our project:
 
 ```
 {
@@ -227,7 +227,7 @@ class UserController extends Controller {
 
   async show() {
     const ctx = this.ctx;
-    ctx.body = await ctx.model.User.findById(toInt(ctx.params.id));
+    ctx.body = await ctx.model.User.findByPk(toInt(ctx.params.id));
   }
 
   async create() {
@@ -241,7 +241,7 @@ class UserController extends Controller {
   async update() {
     const ctx = this.ctx;
     const id = toInt(ctx.params.id);
-    const user = await ctx.model.User.findById(id);
+    const user = await ctx.model.User.findByPk(id);
     if (!user) {
       ctx.status = 404;
       return;
@@ -255,7 +255,7 @@ class UserController extends Controller {
   async destroy() {
     const ctx = this.ctx;
     const id = toInt(ctx.params.id);
-    const user = await ctx.model.User.findById(id);
+    const user = await ctx.model.User.findByPk(id);
     if (!user) {
       ctx.status = 404;
       return;
@@ -317,7 +317,7 @@ module.exports = app => {
 };
 ```
 
-- Initialize the file `test/.setup.js`, introduce the factory, and ensure that the data is cleaned after the test is executed to avoid being affected.
+- Initialize the file `test/.setup.js`, introduce the factory, and ensure that the data is cleaned after the test is executed to avoid being affected.
 
 ```js
 const { app } = require('egg-mock/bootstrap');
@@ -328,7 +328,6 @@ afterEach(async () => {
   // clear database after each test case
   await Promise.all([
     app.model.User.destroy({ truncate: true, force: true }),
-    app.model.Post.destroy({ truncate: true, force: true }),
   ]);
 });
 ```
@@ -339,7 +338,7 @@ Then we can start writing real test cases:
 // test/app/controller/users.test.js
 const { assert, app } = require('egg-mock/bootstrap');
 
-describe('test/app/service/users.test.js', () => {
+describe('test/app/controller/users.test.js', () => {
   describe('GET /users', () => {
     it('should work', async () => {
       // Quickly create some users object into the database via factory-girl
@@ -406,7 +405,7 @@ A more complete example can be found in [eggjs/examples/sequelize].
 
 ## Boilerplate
 
-We also provide sequelize boilerplate that integrates the modules [egg-sequelize], [sequelize-cli] and [factory-girl] provided in this documentation. You can quickly initialize a new application based on it by `egg-init --type=sequelize`.
+We also provide sequelize boilerplate that integrates the modules [egg-sequelize], [sequelize-cli] and [factory-girl] provided in this documentation. You can quickly initialize a new application based on it by `npm init egg --type=sequelize`.
 
 [mysql2]: https://github.com/sidorares/node-mysql2
 [sequelize]: http://docs.sequelizejs.com/
@@ -415,3 +414,4 @@ We also provide sequelize boilerplate that integrates the modules [egg-sequelize
 [Migrations]: http://docs.sequelizejs.com/manual/tutorial/migrations.html
 [factory-girl]: https://github.com/aexmachina/factory-girl
 [eggjs/examples/sequelize]: https://github.com/eggjs/examples/tree/master/sequelize
+[egg-mysql]: https://github.com/eggjs/egg-mysql

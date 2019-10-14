@@ -48,6 +48,16 @@ module.exports = appInfo => {
     proxy: false,
 
     /**
+     * How many proxies the application deployed behind
+     * framework use this to get the clients' real ips
+     * `0` means not limited, for most common usage, it should be `1`
+     * @member {Integer} Config#maxProxyCount
+     * @default
+     * @since 2.21.0
+     */
+    maxProxyCount: 0,
+
+    /**
      * Detect request's protocol from specified headers, not case-sensitive.
      * Only worked when config.proxy set to true.
      * @member {String} Config#protocolHeaders
@@ -176,8 +186,9 @@ module.exports = appInfo => {
    * @property {String | RegExp | Function | Array} ignore - won't parse request body when url path hit ignore pattern, can not set `ignore` when `match` presented
    * @property {String | RegExp | Function | Array} match - will parse request body only when url path hit match pattern
    * @property {String} encoding - body's encoding type，default is utf8
-   * @property {String} formLimit - limit of the urlencoded body. If the body ends up being larger than this limit, a 413 error code is returned. Default is 100kb
-   * @property {String} jsonLimit - limit of the json body, default is 100kb
+   * @property {String} formLimit - limit of the urlencoded body. If the body ends up being larger than this limit, a 413 error code is returned. Default is 1mb
+   * @property {String} jsonLimit - limit of the json body, default is 1mb
+   * @property {String} textLimit - limit of the text body, default is 1mb
    * @property {Boolean} strict - when set to true, JSON parser will only accept arrays and objects. Default is true
    * @property {Number} queryString.arrayLimit - urlencoded body array's max length, default is 100
    * @property {Number} queryString.depth - urlencoded body object's max depth, default is 5
@@ -186,8 +197,9 @@ module.exports = appInfo => {
   config.bodyParser = {
     enable: true,
     encoding: 'utf8',
-    formLimit: '100kb',
-    jsonLimit: '100kb',
+    formLimit: '1mb',
+    jsonLimit: '1mb',
+    textLimit: '1mb',
     strict: true,
     // @see https://github.com/hapijs/qs/blob/master/lib/parse.js#L8 for more options
     queryString: {
@@ -195,13 +207,17 @@ module.exports = appInfo => {
       depth: 5,
       parameterLimit: 1000,
     },
+    onerror(err) {
+      err.message += ', check bodyParser config';
+      throw err;
+    },
   };
 
   /**
    * logger options
    * @member Config#logger
    * @property {String} dir - directory of log files
-   * @property {String} encoding - log file encloding, defaults to utf8
+   * @property {String} encoding - log file encoding, defaults to utf8
    * @property {String} level - default log level, could be: DEBUG, INFO, WARN, ERROR or NONE, defaults to INFO in production
    * @property {String} consoleLevel - log level of stdout, defaults to INFO in local serverEnv, defaults to WARN in unittest, defaults to NONE elsewise
    * @property {Boolean} disableConsoleAfterReady - disable logger console after app ready. defaults to `false` on local and unittest env, others is `true`.
@@ -238,12 +254,12 @@ module.exports = appInfo => {
    * @property {Number} request.timeout - httpclient request default timeout, default is 5000 ms.
    *
    * @property {Boolean} httpAgent.keepAlive - Enable http agent keepalive or not, default is true
-   * @property {Number} httpAgent.freeSocketKeepAliveTimeout - http agent socket keepalive max free time, default is 4000 ms.
+   * @property {Number} httpAgent.freeSocketTimeout - http agent socket keepalive max free time, default is 4000 ms.
    * @property {Number} httpAgent.maxSockets - http agent max socket number of one host, default is `Number.MAX_SAFE_INTEGER` @ses https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
    * @property {Number} httpAgent.maxFreeSockets - http agent max free socket number of one host, default is 256.
    *
    * @property {Boolean} httpsAgent.keepAlive - Enable https agent keepalive or not, default is true
-   * @property {Number} httpsAgent.freeSocketKeepAliveTimeout - httpss agent socket keepalive max free time, default is 4000 ms.
+   * @property {Number} httpsAgent.freeSocketTimeout - httpss agent socket keepalive max free time, default is 4000 ms.
    * @property {Number} httpsAgent.maxSockets - https agent max socket number of one host, default is `Number.MAX_SAFE_INTEGER` @ses https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
    * @property {Number} httpsAgent.maxFreeSockets - https agent max free socket number of one host, default is 256.
    */
@@ -257,13 +273,13 @@ module.exports = appInfo => {
     },
     httpAgent: {
       keepAlive: true,
-      freeSocketKeepAliveTimeout: 4000,
+      freeSocketTimeout: 4000,
       maxSockets: Number.MAX_SAFE_INTEGER,
       maxFreeSockets: 256,
     },
     httpsAgent: {
       keepAlive: true,
-      freeSocketKeepAliveTimeout: 4000,
+      freeSocketTimeout: 4000,
       maxSockets: Number.MAX_SAFE_INTEGER,
       maxFreeSockets: 256,
     },
@@ -298,6 +314,16 @@ module.exports = appInfo => {
    * @member {Number} Config.workerStartTimeout
    */
   config.workerStartTimeout = 10 * 60 * 1000;
+
+  /**
+   * server timeout in milliseconds, default to 2 minutes.
+   *
+   * for special request, just use `ctx.req.setTimeout(ms)`
+   *
+   * @member {Number} Config#serverTimeout
+   * @see https://nodejs.org/api/http.html#http_server_timeout
+   */
+  config.serverTimeout = null;
 
   /**
    *

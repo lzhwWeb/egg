@@ -133,6 +133,15 @@ exports.logger = {
 };
 ```
 
+## 日志文件格式
+设置输出格式为JSON,方便日志监控系统分析
+```js
+// config/config.${env}.js
+exports.logger = {
+  outputJSON: true,
+};
+```
+
 ## 日志级别
 
 日志分为 `NONE`，`DEBUG`，`INFO`，`WARN` 和 `ERROR` 5 个级别。
@@ -177,7 +186,7 @@ exports.logger = {
 
 ### 终端日志级别
 
-默认只会输出 `INFO` 及以上（`WARN` 和 `ERROR`）的日志到终端中。
+默认只会输出 `INFO` 及以上（`WARN` 和 `ERROR`）的日志到终端中。（注意：这些日志默认只在 local 和 unittest 环境下会打印到终端）
 
 - `logger.consoleLevel`: 输出到终端日志的级别，默认为 `INFO`
 
@@ -198,6 +207,15 @@ exports.logger = {
 // config/config.${env}.js
 exports.logger = {
   consoleLevel: 'NONE',
+};
+```
+
+- 基于性能的考虑，在正式环境下，默认会关闭终端日志输出。如有需要，你可以通过下面的配置开启。（**不推荐**）
+
+```js
+// config/config.${env}.js
+exports.logger = {
+  disableConsoleAfterReady: false,
 };
 ```
 
@@ -225,6 +243,30 @@ module.exports = appInfo => {
 ```
 
 可通过 `app.getLogger('xxLogger')` / `ctx.getLogger('xxLogger')` 获取，最终的打印结果和 coreLogger 类似。
+
+### 自定义日志格式
+
+```js
+// config/config.${env}.js
+const path = require('path');
+
+module.exports = appInfo => {
+  return {
+    customLogger: {
+      xxLogger: {
+        file: path.join(appInfo.root, 'logs/xx.log'),
+        formatter(meta) {
+          return `[${meta.date}] ${meta.message}`;
+        },
+        // ctx logger
+        contextFormatter(meta) {
+          return `[${meta.date}] [${meta.ctx.method} ${meta.ctx.url}] ${meta.message}`;
+        },
+      },
+    },
+  };
+};
+```
 
 ### 高级自定义日志
 

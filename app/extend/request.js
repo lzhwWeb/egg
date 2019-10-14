@@ -91,13 +91,19 @@ module.exports = {
 
     const val = getFromHeaders(this, this.app.config.ipHeaders) || '';
     this[IPS] = val ? val.split(/\s*,\s*/) : [];
+
+    if (this.app.config.maxProxyCount > 0) {
+      // if maxProxyCount present, only keep `maxProxyCount + 1` ips
+      // [ illegalIp, clientRealIp, proxyIp1, proxyIp2 ...]
+      this[IPS] = this[IPS].slice(-(this.app.config.maxProxyCount + 1));
+    }
     return this[IPS];
   },
 
   /**
-   * Get or set the request remote IPv4 address
+   * Get the request remote IPv4 address
    * @member {String} Request#ip
-   * @param {String} ip - IPv4 address
+   * @return {String} IPv4 address
    * @example
    * ```js
    * this.request.ip
@@ -116,6 +122,17 @@ module.exports = {
     return this._ip;
   },
 
+  /**
+   * Set the request remote IPv4 address
+   * @member {String} Request#ip
+   * @param {String} ip - IPv4 address
+   * @example
+   * ```js
+   * this.request.ip
+   * => '127.0.0.1'
+   * => '111.10.2.1'
+   * ```
+   */
   set ip(ip) {
     this._ip = ip;
   },
@@ -139,11 +156,7 @@ module.exports = {
   // How to read query safely
   // https://github.com/koajs/qs/issues/5
   _customQuery(cacheName, filter) {
-    const str = this.querystring;
-    if (!str) {
-      return {};
-    }
-
+    const str = this.querystring || '';
     let c = this[cacheName];
     if (!c) {
       c = this[cacheName] = {};
@@ -153,7 +166,7 @@ module.exports = {
       cacheQuery = c[str] = {};
       const isQueries = cacheName === _queriesCache;
       // `querystring.parse` CANNOT parse something like `a[foo]=1&a[bar]=2`
-      const query = querystring.parse(str);
+      const query = str ? querystring.parse(str) : {};
       for (const key in query) {
         if (!key) {
           // key is '', like `a=b&`
@@ -230,10 +243,9 @@ module.exports = {
   /**
    * Set query-string as an object.
    *
-   * @method Request#query
+   * @function Request#query
    * @param {Object} obj set querystring and query object for request.
    * @return {void}
-   * @api public
    */
   set query(obj) {
     this.querystring = querystring.stringify(obj);

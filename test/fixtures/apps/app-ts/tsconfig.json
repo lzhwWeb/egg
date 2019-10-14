@@ -3,8 +3,11 @@
     "target": "es2017",
     "baseUrl": ".",
     "paths": {
-      "egg": ["../../../../index"]
+      "egg": [
+        "../../../../index"
+      ]
     },
+    "types" : ["node"],
     "module": "commonjs",
     "strict": true,
     "noImplicitAny": false

@@ -1,7 +1,7 @@
 # Contribution Guide
 
 If you have any comment or advice, please report your [issue](https://github.com/eggjs/egg/issues),
-or make any change as you wish and submit an [PR](https://github.com/eggjs/egg/pulls).
+or make any change as you wish and submit a [PR](https://github.com/eggjs/egg/pulls).
 
 ## Reporting New Issues
 
@@ -110,7 +110,7 @@ Feel free to add more content in the body, if you think subject is not self-expl
 
 - **If the commit is a Breaking Change, please note it clearly in this part.**
 - related issues, like `Closes #1, Closes #2, #3`
-- If there is a change about an old feaure or a new feature, please associate `doc` and `egg-init`, like `eggjs/egg-bin#123`
+- If there is a change about an old feaure or a new feature, please associate `doc` and `egg-core`, like `eggjs/egg-core#123`
 
 e.g.
 
@@ -132,7 +132,20 @@ BREAKING CHANGE:
 
 Look at [these files](https://docs.google.com/document/d/1QrDFcIiPjSLDn3EL15IJygNPiHORgU1_OOAqWjiDU5Y/edit) for more details.
 
-## Release
+### Principles of English Translations
+
+We follow the normal principles of English articles when translating, however, due to there're some special principles of titles, we should follow these rules:
+
+- For nouns, verbs, pronouns, adjectives and adverbs, capitalize the first character. For prepsitions, articles, conjections, interjections and auxiliary words, the first character should be in lowercase. **the character of the first word and the last word for title should be capitalized, regardless of what it is**.
+- For proper nouns such as the direct reference of a variable or the name of a plugin, we must use backtick (underneath the 'Esc') to surround them and keep what they are in origin.
+- For prepsitions more than 5 characters, their first characters should be also capitalized, otherwise not.
+- For some very important titles or some fixed proper nouns such as methods of Http: POST,GET,PUT,DELETE, every charater can be capitalized (USE WITH CAUTION).
+- If the article belongs to the form of O-V (Object-Verb) such as "Config Management", we'd better translate it as "Management Configuration", or "Managing Configuration" in the form of "gerund+noun".
+- If your title is taken as a sentence, write in 'Sentence Case' (e.g: In FAQ, each title is actually an English sentence).
+
+For more info, please refer [English Title Case].
+
+## Release Management
 
 Egg uses semantic versioning in release process based on [semver].
 
@@ -185,3 +198,4 @@ All tags mentioned above means the tags of npm in `package.json`.
 [1.x milestone]: https://github.com/eggjs/egg/milestone/1
 [npm]: http://npmjs.com/
 [How to deploy an npm package]: https://fengmk2.com/blog/2016/how-i-publish-a-npm-package
+[English Title Case]: https://headlinecapitalization.com/

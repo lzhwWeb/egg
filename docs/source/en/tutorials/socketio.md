@@ -1,4 +1,5 @@
-## title: Socket.IO
+title: Socket.IO
+---
 
 **Socket.IO** is a real-time application framework based on Node.js, which has a wide range of applications including instant messaging, notification and message push, real-time analysis and other scenarios.
 
@@ -50,7 +51,7 @@ exports.io = {
 
 > Namespaces are `/` and `/ example`, not`example`
 
-#### uws
+#### `uws`
 
 **Egg's socket is using `ws`, [uws](https://www.npmjs.com/package/uws) is deprecated due to [some reasons](https://github.com/socketio/socket.io/issues/3319).**
 		
@@ -63,7 +64,7 @@ exports.io = {
 };
 ```
 
-#### redis
+#### `redis`
 
 [egg-socket.io] has built-in redis support via `socket.io-redis`. In cluster mode, the use of redis can make it relatively simple to achieve information sharing of clients/rooms and so on
 
@@ -72,7 +73,7 @@ exports.io = {
 exports.io = {
   redis: {
     host: {redis server host}
-    port: {redis server prot},
+    port: {redis server port},
     auth_pass: {redis server password},
     db: 0,
   },
@@ -82,7 +83,7 @@ exports.io = {
 > When `redis` is turned on, the program tries to connect to the redis server at startup
 > Here `redis` is only used to store connection instance information, see [# server.adapter](https://socket.io/docs/server-api/#server-adapter-value)
 
-**note:**
+**Note:**
 If the project also uses the `egg-redis`, please configure it separately. Do not share it.
 
 ### Deployment
@@ -114,7 +115,7 @@ location / {
 }
 ```
 
-## Using egg-socket.io
+## Using `egg-socket.io`
 
 The directory structure of project which has enabled the [egg-socket.io] is as follows:
 
@@ -145,7 +146,7 @@ Middleware has the following two scenarios:
 
 It is configured in each namespace, respectively, according to the scenarios given above.
 
-**note:**
+**Note:**
 
 If we enable the framework middleware, you will find the following directory in the project:
 
@@ -267,7 +268,7 @@ module.exports = app => {
 };
 ```
 
-**note:**
+**Note:**
 
 Nsp has the following system events:
 
@@ -325,7 +326,7 @@ Module.exports = app => {
 
 Here we use [egg-socket.io] to do a small example which supports p2p chat
 
-### client
+### Client
 
 The UI-related content is not rewritten. It can be called via window.socket
 
@@ -396,11 +397,11 @@ socket.on('res', msg => {
 });
 ```
 
-### server
+### Server
 
-The following is part of the demo code and explains the role of each method
+The following is part of the demo code and explains the role of each method:
 
-#### config
+#### Config
 
 ```js
 // {app_root}/config/config.${env}.js
@@ -419,7 +420,7 @@ exports.io = {
 };
 ```
 
-#### helper
+#### Helper
 
 Framework extensions for encapsulating data formats
 
@@ -463,7 +464,7 @@ Format：
 }
 ```
 
-#### middleware
+#### Middleware
 
 [egg-socket.io] middleware handles socket connection handling
 
@@ -548,7 +549,7 @@ module.exports = () => {
 };
 ```
 
-#### controller
+#### Controller
 
 Data exchange of P2P communication is through exchange
 
@@ -578,7 +579,7 @@ class NspController extends controller {
 module.exports = NspController;
 ```
 
-#### router
+#### Router
 
 ```js
 // {app_root}/app/router.js

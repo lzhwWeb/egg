@@ -16,11 +16,11 @@ As we've already explained some these points in chapter [using plugins](../basic
 
 ### Quick Start with Scaffold
 
-You can choose [plugin][egg-boilerplate-plugin] scaffold in [egg-init] for quick start.
+Just use [egg-boilerplate-plugin] to generates a scaffold for you.
 
 ```bash
-$ egg-init --type=plugin egg-hello
-$ cd egg-hello
+$ mkdir egg-hello && cd egg-hello
+$ npm init egg --type=plugin
 $ npm i
 $ npm test
 ```
@@ -129,11 +129,11 @@ The `dependencies` and `optionalDependencies` are learnt from `npm`, most time w
 
 Attention: if you are using `optionalDependencies`, framework won't verify the activation of these dependencies, they are only for sorting loading orders. In such situation, the plugin will go through other ways such as `interface detection` to decide processing logic.
 
-## What can plugin do?
+## What can Plugin Do?
 
 We've discussed what plugin is. Now what can it do?
 
-### Built-in Objects API Extension
+### Built-in Objects API Extensions
 
 Extend the built-in objects of the framework, just like the application
 
@@ -181,7 +181,7 @@ Extend the built-in objects of the framework, just like the application
     };
     ```
 
-### Initialization on application starting
+### Initialization on Application Starting
 
 - If you want to read some local config before startup:
 
@@ -394,7 +394,7 @@ As you can see, all we need to do for this plugin is passing the fields that nee
     }
     ```
 
-##### Dynamically Instantiate
+##### Dynamically Instantiating
 
 Instead of declaring the configuration in the configuration file in advance, we can dynamically initialize an instance at the runtime of the application.
 
@@ -468,7 +468,7 @@ It's well welcomed to your contributions to the new plugins, but also hope you f
     }
     ```
 
-##  Why do not use the npm package name as the plugin name?
+##  Why Do Not Use the `npm` Package Name as the Plugin Name?
 
 Egg defines the plugin name through the `eggPlugin.name`, it is only unique in application or framework, that means **many npm packages might get the same plugin name**, why design in this way?
 
@@ -478,7 +478,6 @@ What's more, Egg can use this feature to make an adapter, for example, the plugi
 
 **Giving the same plugin name and the same API to the same plugin can make quick switch between them**. This is really really useful in template and database.
 
-[egg-init]: https://github.com/eggjs/egg-init
 [egg-boilerplate-plugin]: https://github.com/eggjs/egg-boilerplate-plugin
 [egg-mysql]: https://github.com/eggjs/egg-mysql
 [egg-oss]: https://github.com/eggjs/egg-oss

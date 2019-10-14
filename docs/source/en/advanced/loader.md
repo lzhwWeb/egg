@@ -89,7 +89,7 @@ From the scene above we can see the relationship of application, plugin and fram
 +-----------------------------------+--------+
 ```
 
-## loadUnit
+## LoadUnit
 
 Egg regards application, framework and plugin as loadUnit, because they are similar in code structure, here is the directory structure:
 
@@ -164,7 +164,7 @@ The plugin1 is framework1's dependent plugin, the object key order of plugin1 af
 
 See [Loader.getLoadUnits](https://github.com/eggjs/egg-core/blob/65ea778a4f2156a9cebd3951dac12c4f9455e636/lib/loader/egg_loader.js#L233) method for details.
 
-### File order
+### File Order
 
 The files that will be loaded by default are listed above. Egg will load files by the following order, each file or directory will be loaded according to loadUnit order (application, framework and plugin are different):
 
@@ -189,7 +189,7 @@ The framework has provided you several functions to handle during the whole life
 - `configWillLoad`: All the config files are ready to load, so this is the LAST chance to modify them.
 - `configDidLoad`: When all the config files have been loaded.
 - `didLoad`: When all the files have been loaded.
-- `willReady`: When all the plug-ins are ready.
+- `willReady`: When all the plugins are ready.
 - `didReady`: When all the workers are ready.
 - `serverDidReady`: When the server is ready.
 - `beforeClose`: Before the application is closed.
@@ -241,7 +241,8 @@ module.exports = AppBootHook;
 The framework will automatically load and initialize this class after developers have defined `app.js` and `agenet.js` in the form of class, and it will call the corresponding methods during each of the life cycles.
 
 Here's the image of starting process:
-![](https://user-images.githubusercontent.com/40081831/47344099-3bd79980-d6da-11e8-8bc2-5adad70cdf95.png)
+
+![](https://user-images.githubusercontent.com/40081831/50559449-2d3cdc80-0d32-11e9-96f2-42b3cc56d5d3.png)
 
 **Notice: We have an expiring time limitation when using `beforeClose` to close the processing of the framework. If a worker has accepted the signal of exit but doesn't exit within the limit period, it will be FORCELY closed.**
 
@@ -249,15 +250,15 @@ If you need to modify the expiring time, please see [this document](https://gith
 
 Deprecated methods:
 
-## beforeStart
+## `beforeStart`
 
-`beforeStart` is called during the loading process, all of its methods are running in parallel. So we usually execute some asynchronized methods (e.g: Check the state of connection, in [`egg-mysql`](https://github.com/eggjs/egg-mysql/blob/master/lib/mysql.js) we use this method to check the connection state with mysql). When all the tasks in `beforeStart` finished, the state will be `ready`. It's NOT recommended to excute a function that consumes too much time there, which will cause the expiration of application's start.Plug-in developers should use `didLoad` instead, for application developers, `willReady` is the replacer.
+`beforeStart` is called during the loading process, all of its methods are running in parallel. So we usually execute some asynchronized methods (e.g: Check the state of connection, in [`egg-mysql`](https://github.com/eggjs/egg-mysql/blob/master/lib/mysql.js) we use this method to check the connection state with mysql). When all the tasks in `beforeStart` finished, the state will be `ready`. It's NOT recommended to excute a function that consumes too much time there, which will cause the expiration of application's start.plugin developers should use `didLoad` instead, for application developers, `willReady` is the replacer.
 
-## ready
+## `ready`
 
-All the methods mounted on `ready` will be executed when load ends, and after all the methods in `beforeStart` have finished executing. By the time Http server's listening also starts. This means all the plug-ins are fully loaded and everything is ready, So we use it to process some tasks after start. For developers now, we use `didReady` instead.
+All the methods mounted on `ready` will be executed when load ends, and after all the methods in `beforeStart` have finished executing. By the time Http server's listening also starts. This means all the plugins are fully loaded and everything is ready, So we use it to process some tasks after start. For developers now, we use `didReady` instead.
 
-## beforeClose
+## `beforeClose`
 
 All the methods mounted on `beforeClose` are called in an inverted order after `close` method in app/agent instance is called. E.g: in [`egg`](https://github.com/eggjs/egg/blob/master/lib/egg.js), we close logger, remove listening methods ...,ect.Developers SHOULDN'T use `app.beforeClose` directly now, but in the form of class to implement `beforeClose` instead.
 
@@ -265,7 +266,7 @@ __We don't recommend to use this function in a PROD env, because the process may
 
 What's more, we can use [`egg-development`](https://github.com/eggjs/egg-development#loader-trace) to see the loading process.
 
-### Loading File rules
+### File-Loading Rules
 
 The framework will convert file names when loading files, because there is a difference between the file naming style and the API style. We recommend that files use underscores, while APIs use lower camel case. For examplem `app/service/user_info.js` will be converted to `app.service.userInfo`.
 
@@ -347,7 +348,7 @@ The mention above is just a description of the Loader wording, please see [Frame
 
 Loader also supports some low level APIs to simplify code when extending, [here](https://github.com/eggjs/egg-core#eggloader) are all APIs.
 
-### loadFile
+### `loadFile`
 
 Used to load a file, such as loading `app/xx.js`:
 
@@ -367,7 +368,7 @@ module.exports = app => {
 
 If the file exports a function, then the function will be called with `app` as its parameter, otherwise uses this value directly.
 
-### loadToApp
+### `loadToApp`
 
 Used to load files from a directory into the app, such as `app/controller/home.js` to `app.controller.home`.
 
@@ -386,7 +387,7 @@ The method has three parameters `loadToApp(directory, property, LoaderOptions)`:
 2. Property is app's property.
 3. [LoaderOptions](#LoaderOptions) are some configurations.
 
-### loadToContext
+### `loadToContext`
 
 The difference between loadToApp and loadToContext is that loadToContext loads files into ctx instead of app, and it's a lazy loading. It puts files into a temp object when loading, and instantiates objects when calling ctx APIs.
 
@@ -419,7 +420,7 @@ So this class will only be instantiated when first calling, and will be cached a
 
 ### LoaderOptions
 
-#### ignore [String]
+#### `ignore [String]`
 
 `ignore` could ignore some files, supports glob, the default is empty.
 
@@ -430,7 +431,7 @@ app.loader.loadToApp(directory, 'controller', {
 });
 ```
 
-#### initializer [Function]
+#### `initializer [Function]`
 
 Processing each file exported values, the default is empty.
 
@@ -451,7 +452,7 @@ app.loader.loadToApp(directory, 'model', {
 });
 ```
 
-#### caseStyle [String]
+#### `caseStyle [String]`
 
 File conversion rules, could be `camel`, `upper`, `lower`, the default is `camel`.
 
@@ -469,7 +470,7 @@ app/controller | lower
 app/middleware | lower
 app/service | lower
 
-#### override [Boolean]
+#### `override [Boolean]`
 
 Overriding or throwing exception when encounter existing files, the default is false.
 
@@ -483,7 +484,7 @@ app/controller | true
 app/middleware | false
 app/service | false
 
-#### call [Boolean]
+#### `call [Boolean]`
 
 Calling when export's object is function, and get the return value, the default is true
 
@@ -494,6 +495,40 @@ File | Configuration
 app/controller | true
 app/middleware | false
 app/service | true
+
+## CustomLoader
+
+You can use `customLoader` instead of `loadToContext` and `loadToApp`.
+
+When you define a loader with `loadToApp`
+
+```js
+// app.js
+module.exports = app => {
+  const directory = path.join(app.config.baseDir, 'app/adapter');
+  app.loader.loadToApp(directory, 'adapter');
+};;
+```
+
+Instead, you can define `customLoader`
+
+```js
+// config/config.default.js
+module.exports = {
+  customLoader: {
+    // the property name when load to application, E.X. app.adapter
+    adapter: {
+      // relative to app.config.baseDir
+      directory: 'app/adapter',
+      // if inject is ctx, it will use loadToContext
+      inject: 'app',
+      // whether load the directory of the framework and plugin
+      loadunit: false,
+      // you can also use other LoaderOptions
+   }
+  },
+};
+``
 
 [Loader]: https://github.com/eggjs/egg-core/blob/master/lib/loader/egg_loader.js
 [AppWorkerLoader]: https://github.com/eggjs/egg/blob/master/lib/loader/app_worker_loader.js

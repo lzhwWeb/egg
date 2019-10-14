@@ -1,11 +1,21 @@
-import * as accepts from 'accepts';
-import * as KoaApplication from 'koa';
-import * as KoaRouter from 'koa-router';
+/// <reference types="node" />
+import accepts = require('accepts');
+import KoaApplication = require('koa');
+import KoaRouter = require('koa-router');
 import { EventEmitter } from 'events'
 import { Readable } from 'stream';
 import { Socket } from 'net';
-import { EggLogger, EggLoggers, LoggerLevel as EggLoggerLevel, EggContextLogger } from 'egg-logger';
-import { HttpClient2, RequestOptions } from 'urllib';
+import { IncomingMessage, ServerResponse } from 'http';
+import { EggLogger, EggLoggers, LoggerLevel as EggLoggerLevel, EggLoggersOptions, EggLoggerOptions, EggContextLogger } from 'egg-logger';
+import { HttpClient, RequestOptions2 as RequestOptions } from 'urllib';
+import {
+  EggCoreBase,
+  FileLoaderOption,
+  EggLoader as CoreLoader,
+  EggCoreOptions as CoreOptions,
+  EggLoaderOptions as CoreLoaderOptions,
+  BaseContextClass as CoreBaseContextClass,
+} from 'egg-core';
 import EggCookies = require('egg-cookies');
 import 'egg-onerror';
 import 'egg-session';
@@ -27,11 +37,14 @@ declare module 'egg' {
   // Remove specific property from the specific class
   type RemoveSpecProp<T, P> = Pick<T, Exclude<keyof T, P>>;
 
-  class EggHttpClient extends HttpClient2 {
-    constructor(app: Application);
+  interface EggHttpClient extends HttpClient<RequestOptions> {}
+  interface EggHttpConstructor {
+    new (app: Application): EggHttpClient;
   }
-  class EggContextHttpClient extends HttpClient2 {
-    constructor(ctx: Context);
+
+  interface EggContextHttpClient extends HttpClient<RequestOptions> {}
+  interface EggContextHttpClientConstructor {
+    new (ctx: Context): EggContextHttpClient;
   }
 
   /**
@@ -39,33 +52,37 @@ declare module 'egg' {
    * it's instantiated in context level,
    * {@link Helper}, {@link Service} is extending it.
    */
-  export class BaseContextClass { // tslint:disable-line
-    /**
-     * request context
-     */
-    ctx: Context;
-
-    /**
-     * Application
-     */
-    app: Application;
-
-    /**
-     * Application config object
-     */
-    config: EggAppConfig;
-
-    /**
-     * service
-     */
-    service: IService;
-
+  export class BaseContextClass extends CoreBaseContextClass<Context, Application, EggAppConfig, IService> { // tslint:disable-line
     /**
      * logger
      */
-    logger: EggLogger;
+    protected logger: EggLogger;
+  }
 
-    constructor(ctx: Context);
+  export class Boot {
+    /**
+     * logger
+     * @member {EggLogger}
+     */
+    protected logger: EggLogger;
+
+    /**
+     * The configuration of application
+     * @member {EggAppConfig}
+     */
+    protected config: EggAppConfig;
+
+    /**
+     * The instance of agent
+     * @member {Agent}
+     */
+    protected agent: Agent;
+
+    /**
+     * The instance of app
+     * @member {Application}
+     */
+    protected app: Application;
   }
 
   export type RequestArrayBody = any[];
@@ -165,26 +182,6 @@ declare module 'egg' {
     realStatus: number;
   }
 
-  export interface ContextView { // tslint:disable-line
-    /**
-     * Render a file by view engine
-     * @param {String} name - the file path based on root
-     * @param {Object} [locals] - data used by template
-     * @param {Object} [options] - view options, you can use `options.viewEngine` to specify view engine
-     * @return {Promise<String>} result - return a promise with a render result
-     */
-    render(name: string, locals?: any, options?: any): Promise<string>;
-
-    /**
-     * Render a template string by view engine
-     * @param {String} tpl - template string
-     * @param {Object} [locals] - data used by template
-     * @param {Object} [options] - view options, you can use `options.viewEngine` to specify view engine
-     * @return {Promise<String>} result - return a promise with a render result
-     */
-    renderString(name: string, locals?: any, options?: any): Promise<string>;
-  }
-
   export type LoggerLevel = EggLoggerLevel;
 
   /**
@@ -212,6 +209,59 @@ declare module 'egg' {
 
   type IgnoreItem = string | RegExp | ((ctx: Context) => boolean);
   type IgnoreOrMatch = IgnoreItem | IgnoreItem[];
+
+  /** logger config of egg */
+  export interface EggLoggerConfig extends RemoveSpecProp<EggLoggersOptions, 'type'> {
+    /** custom config of coreLogger */
+    coreLogger?: Partial<EggLoggerOptions>;
+    /** allow debug log at prod, defaults to true */
+    allowDebugAtProd?: boolean;
+    /** disable logger console after app ready. defaults to `false` on local and unittest env, others is `true`. */
+    disableConsoleAfterReady?: boolean;
+  }
+
+  /** Custom Loader Configuration */
+  export interface CustomLoaderConfig extends RemoveSpecProp<FileLoaderOption, 'inject' | 'target'> {
+    /**
+     * an object you wanner load to, value can only be 'ctx' or 'app'. default to app
+     */
+    inject?: 'ctx' | 'app';
+    /**
+     * whether need to load files in plugins or framework, default to false
+     */
+    loadunit?: boolean;
+  }
+
+  export interface HttpClientBaseConfig {
+    /** Whether use http keepalive */
+    keepAlive?: boolean;
+    /** Free socket after keepalive timeout */
+    freeSocketKeepAliveTimeout?: number;
+    /** Free socket after request timeout */
+    freeSocketTimeout?: number;
+    /** Request timeout */
+    timeout?: number;
+    /** Determines how many concurrent sockets the agent can have open per origin */
+    maxSockets?: number;
+    /** The maximum number of sockets that will be left open in the free state */
+    maxFreeSockets?: number;
+  }
+
+  /** HttpClient config */
+  export interface HttpClientConfig extends HttpClientBaseConfig {
+    /** http.Agent */
+    httpAgent?: HttpClientBaseConfig;
+    /** https.Agent */
+    httpsAgent?: HttpClientBaseConfig;
+    /** Default request args for httpclient */
+    request?: RequestOptions;
+    /** Whether enable dns cache */
+    enableDNSCache?: boolean;
+    /** Enable proxy request, default is false. */
+    enableProxy?: boolean;
+    /** proxy agent uri or options, default is null. */
+    proxy?: string | { [key: string]: any };
+  }
 
   export interface EggAppConfig {
     workerStartTimeout: number;
@@ -272,31 +322,15 @@ declare module 'egg' {
      * @property {Object} coreLogger - custom config of coreLogger
      * @property {Boolean} allowDebugAtProd - allow debug log at prod, defaults to true
      */
-    logger: {
-      dir: string;
-      encoding: string;
-      env: EggEnvType;
-      level: LoggerLevel;
-      consoleLevel: LoggerLevel;
-      disableConsoleAfterReady: boolean;
-      outputJSON: boolean;
-      buffer: boolean;
-      appLogName: string;
-      coreLogName: string;
-      agentLogName: string;
-      errorLogName: string;
-      coreLogger: any;
-      allowDebugAtProd: boolean;
+    logger: EggLoggerConfig;
+
+    /** custom logger of egg */
+    customLogger: {
+      [key: string]: EggLoggerOptions;
     };
 
-    httpclient: {
-      keepAlive: boolean;
-      freeSocketKeepAliveTimeout: number;
-      timeout: number;
-      maxSockets: number;
-      maxFreeSockets: number;
-      enableDNSCache: boolean;
-    };
+    /** Configuration of httpclient in egg. */
+    httpclient: HttpClientConfig;
 
     development: {
       /**
@@ -324,6 +358,14 @@ declare module 'egg' {
        */
       reloadPattern: string[] | string;
     };
+
+    /**
+     * customLoader config
+     */
+    customLoader: {
+      [key: string]: CustomLoaderConfig;
+    };
+
     /**
      * It will ignore special keys when dumpConfig
      */
@@ -426,7 +468,7 @@ declare module 'egg' {
 
     static: {
       prefix: string;
-      dir: string;
+      dir: string | string[];
       // support lazy load
       dynamic: boolean;
       preload: boolean;
@@ -434,17 +476,18 @@ declare module 'egg' {
       maxFiles: number;
     } & PlainObject;
 
-    view: {
-      root: string;
-      cache: boolean;
-      defaultExtension: string;
-      defaultViewEngine: string;
-      mapping: PlainObject<string>;
-    };
-
     watcher: PlainObject;
 
     onClientError(err: Error, socket: Socket, app: EggApplication): ClientErrorResponse | Promise<ClientErrorResponse>;
+
+    /**
+     * server timeout in milliseconds, default to 2 minutes.
+     *
+     * for special request, just use `ctx.req.setTimeout(ms)`
+     *
+     * @see https://nodejs.org/api/http.html#http_server_timeout
+     */
+    serverTimeout: number | null;
 
     [prop: string]: any;
   }
@@ -455,7 +498,7 @@ declare module 'egg' {
     headers: { [key: string]: string };
   }
 
-  export interface Router extends KoaRouter {
+  export interface Router extends KoaRouter<any, Context> {
     /**
      * restful router api
      */
@@ -477,36 +520,11 @@ declare module 'egg' {
     url(name: string, params: any): any;
   }
 
-  export class EggApplication extends KoaApplication { // tslint:disable-line
-    /**
-     * The current directory of application
-     */
-    baseDir: string;
-
-    /**
-     * The configuration of application
-     */
-    config: EggAppConfig;
-
-    /**
-     * app.env delegate app.config.env
-     */
-    env: EggEnvType;
-
-    /**
-     * Alias to https://npmjs.com/package/depd
-     */
-    deprecate: any;
-
+  export interface EggApplication extends EggCoreBase<EggAppConfig> { // tslint:disable-line
     /**
      * HttpClient instance
      */
     httpclient: EggHttpClient;
-
-    /**
-     * The loader instance, the default class is EggLoader. If you want define
-     */
-    loader: any;
 
     /**
      * Logger for Application, wrapping app.coreLogger with context infomation
@@ -536,54 +554,24 @@ declare module 'egg' {
      */
     messenger: Messenger;
 
-    plugins: any;
-
     /**
      * get router
      */
     router: Router;
 
     /**
-     * Whether `application` or `agent`
-     */
-    type: string;
-
-    /**
      * create a singleton instance
      */
     addSingleton(name: string, create: any): void;
 
-    /**
-     * Register a function that will be called when app close
-     */
-    beforeClose(fn: () => void): void;
-
-    /**
-     * Excute scope after loaded and before app start
-     */
-    beforeStart(scrope: () => void): void;
-
     runSchedule(schedulePath: string): Promise<any>;
-
-    /**
-     * Close all, it wil close
-     * - callbacks registered by beforeClose
-     * - emit `close` event
-     * - remove add listeners
-     *
-     * If error is thrown when it's closing, the promise will reject.
-     * It will also reject after following call.
-     * @return {Promise} promise
-     * @since 1.0.0
-     */
-    close(): Promise<any>;
 
     /**
      * http request helper base on httpclient, it will auto save httpclient log.
      * Keep the same api with httpclient.request(url, args).
      * See https://github.com/node-modules/urllib#api-doc for more details.
      */
-    curl(url: string, opt?: RequestOptions): Promise<any>;
+    curl<T = any>(url: string, opt?: RequestOptions): Promise<T>;
 
     /**
      * Get logger by name, it's equal to app.loggers['name'], but you can extend it with your own logical
@@ -600,17 +588,30 @@ declare module 'egg' {
      */
     url(name: string, params: any): any;
 
+    /**
+     * Create an anonymous context, the context isn't request level, so the request is mocked.
+     * then you can use context level API like `ctx.service`
+     * @member {String} EggApplication#createAnonymousContext
+     * @param {Request} req - if you want to mock request like querystring, you can pass an object to this function.
+     * @return {Context} context
+     */
+    createAnonymousContext(req?: Request): Context;
 
     /**
      * export context base classes, let framework can impl sub class and over context extend easily.
      */
     ContextCookies: typeof EggCookies;
     ContextLogger: typeof EggContextLogger;
-    ContextHttpClient: typeof EggContextHttpClient;
-    HttpClient: typeof EggHttpClient;
+    ContextHttpClient: EggContextHttpClientConstructor;
+    HttpClient: EggHttpConstructor;
     Subscription: typeof Subscription;
     Controller: typeof Controller;
     Service: typeof Service;
+  }
+
+  // compatible
+  export class EggApplication {
+    constructor(options?: CoreOptions);
   }
 
   export type RouterPath = string | RegExp;
@@ -659,15 +660,6 @@ declare module 'egg' {
     middleware: KoaApplication.Middleware[] & IMiddleware;
 
     /**
-     * Create an anonymous context, the context isn't request level, so the request is mocked.
-     * then you can use context level API like `ctx.service`
-     * @member {String} Application#createAnonymousContext
-     * @param {Request} req - if you want to mock request like querystring, you can pass an object to this function.
-     * @return {Context} context
-     */
-    createAnonymousContext(req?: Request): Context;
-
-    /**
      * Run async function in the background
      * @see Context#runInBackground
      * @param {Function} scope - the first args is an anonymous ctx
@@ -695,16 +687,50 @@ declare module 'egg' {
     truncated: boolean;
   }
 
+  interface GetFileStreamOptions {
+    requireFile?: boolean; // required file submit, default is true
+    defCharset?: string;
+    limits?: {
+      fieldNameSize?: number;
+      fieldSize?: number;
+      fields?: number;
+      fileSize?: number;
+      files?: number;
+      parts?: number;
+      headerPairs?: number;
+    };
+    checkFile?(
+      fieldname: string,
+      file: any,
+      filename: string,
+      encoding: string,
+      mimetype: string
+    ): void | Error;
+  }
+
   /**
   * KoaApplication's Context will carry the default 'cookie' property in
   * the egg's Context interface, which is wrong here because we have our own
   * special properties (e.g: encrypted). So we must remove this property and
   * create our own with the same name.
+  * @see https://github.com/eggjs/egg/pull/2958
+  *
+  * However, the latest version of Koa has "[key: string]: any" on the
+  * context, and there'll be a type error for "keyof koa.Context".
+  * So we have to directly inherit from "KoaApplication.BaseContext" and
+  * rewrite all the properties to be compatible with types in Koa.
+  * @see https://github.com/eggjs/egg/pull/3329
   */
-  export interface Context extends RemoveSpecProp<KoaApplication.Context, 'cookies'> {
+  export interface Context extends KoaApplication.BaseContext {
     [key: string]: any;
 
     app: Application;
+
+    // properties of koa.Context
+    req: IncomingMessage;
+    res: ServerResponse;
+    originalUrl: string;
+    respond?: boolean;
 
     service: IService;
 
@@ -773,8 +799,7 @@ declare module 'egg' {
     realStatus: number;
 
     /**
-     * 设置返回资源对象
-     * set the ctx.body.data value
+     * Set the ctx.body.data value
      *
      * @member {Object} Context#data=
      * @example
@@ -881,34 +906,11 @@ declare module 'egg' {
     starttime: number;
 
     /**
-     * View instance that is created every request
-     */
-    view: ContextView;
-
-    /**
      * http request helper base on httpclient, it will auto save httpclient log.
      * Keep the same api with httpclient.request(url, args).
      * See https://github.com/node-modules/urllib#api-doc for more details.
      */
-    curl(url: string, opt?: RequestOptions): Promise<any>;
-
-    /**
-     * Render a file by view engine
-     * @param {String} name - the file path based on root
-     * @param {Object} [locals] - data used by template
-     * @param {Object} [options] - view options, you can use `options.viewEngine` to specify view engine
-     * @return {Promise<String>} result - return a promise with a render result
-     */
-    render(name: string, locals?: any, options?: any): Promise<string>;
-
-    /**
-     * Render a template string by view engine
-     * @param {String} tpl - template string
-     * @param {Object} [locals] - data used by template
-     * @param {Object} [options] - view options, you can use `options.viewEngine` to specify view engine
-     * @return {Promise<String>} result - return a promise with a render result
-     */
-    renderString(name: string, locals?: any, options?: any): Promise<string>;
+    curl<T = any>(url: string, opt?: RequestOptions): Promise<T>;
 
     __(key: string, ...values: string[]): string;
     gettext(key: string, ...values: string[]): string;
@@ -922,10 +924,11 @@ declare module 'egg' {
      * console.log(stream.fields);
      * ```
      * @method Context#getFileStream
+     * @param {Object} options
      * @return {ReadStream} stream
      * @since 1.0.0
      */
-    getFileStream(): Promise<FileStream>;
+    getFileStream(options?: GetFileStreamOptions): Promise<FileStream>;
 
     /**
      * @see Responce.redirect
@@ -966,7 +969,7 @@ declare module 'egg' {
 
   export interface IMiddleware extends PlainObject { } // tslint:disable-line
 
-  export interface IHelper extends PlainObject {
+  export interface IHelper extends PlainObject, BaseContextClass {
     /**
      * Generate URL path(without host) for route. Takes the route name and a map of named params.
      * @method Helper#pathFor
@@ -1040,19 +1043,37 @@ declare module 'egg' {
   }
 
   export interface ClusterOptions {
-    framework?: string; // specify framework that can be absolute path or npm package
-    baseDir?: string; // directory of application, default to `process.cwd()`
-    plugins?: object | null; // customized plugins, for unittest
-    workers?: number; // numbers of app workers, default to `os.cpus().length`
-    port?: number;  // listening port, default to 7001(http) or 8443(https)
-    https?: boolean;  // https or not
-    key?: string; //ssl key
-    cert?: string;  // ssl cert
-    // typescript?: boolean;
+    /** specify framework that can be absolute path or npm package */
+    framework?: string;
+    /** directory of application, default to `process.cwd()` */
+    baseDir?: string;
+    /** customized plugins, for unittest */
+    plugins?: object | null;
+    /** numbers of app workers, default to `os.cpus().length` */
+    workers?: number;
+    /** listening port, default to 7001(http) or 8443(https) */
+    port?: number;
+    /** https or not */
+    https?: boolean;
+    /** ssl key */
+    key?: string;
+    /** ssl cert */
+    cert?: string;
     [prop: string]: any;
   }
 
   export function startCluster(options: ClusterOptions, callback: (...args: any[]) => any): void;
+
+  export interface StartOptions{
+    /** specify framework that can be absolute path or npm package */
+    framework?: string;
+    /** directory of application, default to `process.cwd()` */
+    baseDir?: string; 
+    /** ignore single process mode warning */
+    ignoreWarning? :boolean 
+  }
+
+  export function start(options?:StartOptions):Promise<Application>
 
   /**
    * Powerful Partial, Support adding ? modifier to a mapped property in deep level
@@ -1099,34 +1120,16 @@ declare module 'egg' {
     sendToApp(action: string, data: any): void;
   }
 
-  export interface EggLoaderOptions {
-    baseDir: string;
-    typescript?: boolean;
-    app: Application;
-    logger: EggLogger;
-    plugins?: any;
-  }
-
-  // egg-core
-  export class EggLoader {
-    options: EggLoaderOptions;
-
-    constructor(options: EggLoaderOptions);
-
-    getHomedir(): EggAppInfo['HOME']
-
-    getAppInfo(): EggAppInfo;
-  }
+  // compatible
+  export interface EggLoaderOptions extends CoreLoaderOptions {}
+  export interface EggLoader extends CoreLoader {}
 
   /**
    * App worker process Loader, will load plugins
    * @see https://github.com/eggjs/egg-core
    */
-  export class AppWorkerLoader extends EggLoader {
-    constructor(options: EggLoaderOptions);
-
+  export class AppWorkerLoader extends CoreLoader {
     loadConfig(): void;
-
     load(): void;
   }
 
@@ -1134,11 +1137,8 @@ declare module 'egg' {
    * Agent worker process loader
    * @see https://github.com/eggjs/egg-loader
    */
-  export class AgentWorkerLoader extends EggLoader {
-    constructor(options: EggLoaderOptions);
-
+  export class AgentWorkerLoader extends CoreLoader {
     loadConfig(): void;
-
     load(): void;
   }
 
@@ -1180,5 +1180,9 @@ declare module 'egg' {
      * Do some thing before app close
      */
     beforeClose?(): Promise<void>;
+  }
+
+  export interface Singleton<T> {
+    get(id: string): T;
   }
 }

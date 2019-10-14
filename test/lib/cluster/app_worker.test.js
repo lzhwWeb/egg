@@ -3,7 +3,7 @@
 const net = require('net');
 const request = require('supertest');
 const address = require('address');
-const assert = require('assert');
+const assert = require('assert-extends');
 const sleep = require('mz-modules/sleep');
 const utils = require('../../utils');
 
@@ -64,6 +64,29 @@ describe('test/lib/cluster/app_worker.test.js', () => {
     ]);
   });
 
+  describe('server timeout', () => {
+    let app;
+    beforeEach(() => {
+      app = utils.cluster('apps/app-server-timeout');
+      // app.debug();
+      return app.ready();
+    });
+    afterEach(() => app.close());
+
+    it('should not timeout', () => {
+      return app.httpRequest()
+        .get('/')
+        .expect(200);
+    });
+
+    it('should timeout', async () => {
+      await assert.asyncThrows(() => {
+        return app.httpRequest().get('/timeout');
+      }, /socket hang up/);
+      app.expect('stdout', /\[http_server] A request `GET \/timeout` timeout with client/);
+    });
+  });
+
   describe('customized client error', () => {
     let app;
     beforeEach(() => {
@@ -87,7 +110,10 @@ describe('test/lib/cluster/app_worker.test.js', () => {
       // customized client error response
       const test1 = app.httpRequest().get('/foo bar');
       test1.request().path = '/foo bar';
-      await test1.expect(html).expect('foo', 'bar').expect(418);
+      await test1.expect(html)
+        .expect('foo', 'bar')
+        .expect('content-length', '134')
+        .expect(418);
 
       // customized client error handle function throws
       const test2 = app.httpRequest().get('/foo bar');

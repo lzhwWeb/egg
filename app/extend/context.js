@@ -10,7 +10,7 @@ const LOCALS_LIST = Symbol('Context#localsList');
 const COOKIES = Symbol('Context#cookies');
 const CONTEXT_LOGGERS = Symbol('Context#logger');
 const CONTEXT_HTTPCLIENT = Symbol('Context#httpclient');
-
+const CONTEXT_ROUTER = Symbol('Context#router');
 
 const proto = module.exports = {
 
@@ -39,7 +39,7 @@ const proto = module.exports = {
   /**
    * Shortcut for httpclient.curl
    *
-   * @method Context#curl
+   * @function Context#curl
    * @param {String|Object} url - request url address.
    * @param {Object} [options] - options for request.
    * @return {Object} see {@link ContextHttpClient#curl}
@@ -59,9 +59,19 @@ const proto = module.exports = {
    * ```
    */
   get router() {
-    return this.app.router;
+    if (!this[CONTEXT_ROUTER]) {
+      this[CONTEXT_ROUTER] = this.app.router;
+    }
+    return this[CONTEXT_ROUTER];
   },
 
+  /**
+   * Set router to Context, only use on EggRouter
+   * @param {EggRouter} val router instance
+   */
+  set router(val) {
+    this[CONTEXT_ROUTER] = val;
+  },
 
   /**
    * Get helper instance from {@link Application#Helper}

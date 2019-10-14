@@ -8,7 +8,7 @@ For a large number of enterprises' applications, TypeScript's static type checki
 However, we've met some problems influencing users' experience when developing Egg in TypeScript:
 
 * The most outstanding Loader Mechanism (Auto-loading) makes TS not analyze dependencies in static.
-* How to validate and show intellisense in `config.{env}.js`, when we modify settings by plug-in and these configurations are automatically merged?
+* How to validate and show intellisense in `config.{env}.js`, when we modify settings by plugin and these configurations are automatically merged?
 * During the period of developing, `tsc -w` is created as an independent process to build up codes, it makes us entangled about where to save the temporary files, and the complicated `npm scripts`.
 * How to map to the TS source files instead of compiled js files in unit tests, coverage tests and error stacks online?
 
@@ -26,8 +26,9 @@ For more about this tossing process, please see [[RFC] TypeScript tool support](
 A quick initialization through the boilerplate:
 
 ```bash
-$ npx egg-init --type=ts showcase
-$ cd showcase && npm i
+$ mkdir showcase && cd showcase
+$ npm init egg --type=ts
+$ npm i
 $ npm run dev
 ```
 
@@ -37,12 +38,12 @@ The boilerplate above will create a very simple example, for a detailed one plea
 
 ---
 
-## Principles of catalogs
+## Principles of Catalogs
 
 **Some constraints:**
 
 * We've no plans for re-writing Egg in TS yet.
-* Egg itself, with its plug-in, will have corresponding `index.d.ts` for users to use easily.
+* Egg itself, with its plugin, will have corresponding `index.d.ts` for users to use easily.
 * TypeScript only belongs to a communication practice. We support it to some extent with our tool chain.
 * TypeScript's version MUST BE 2.8 at least.
 
@@ -227,21 +228,10 @@ Config is a little complicated, because it supports:
 // app/config/config.default.ts
 import { EggAppInfo, EggAppConfig, PowerPartial } from 'egg';
 
-// For config.{env}.ts
-export type DefaultConfig = PowerPartial<EggAppConfig & BizConfig>;
-
-// Config of App's Scheme
-export interface BizConfig {
-  news: {
-    pageSize: number;
-    serverUrl: string;
-  };
-}
-
 export default (appInfo: EggAppInfo) => {
-  const config = {} as PowerPartial<EggAppConfig> & BizConfig;
+   const config = {} as PowerPartial<EggAppConfig>;
 
-  // Override the framework, plug-in's configurations
+  // Override the configs of framework and plugins
   config.keys = appInfo.name + '123456';
   config.view = {
     defaultViewEngine: 'nunjucks',
@@ -250,24 +240,33 @@ export default (appInfo: EggAppInfo) => {
     },
   };
 
-  // Configs of App itself
-  config.news = {
+  // Configs of application
+  const bizConfig = {};
+  bizConfig.news = {
     pageSize: 30,
     serverUrl: 'https://hacker-news.firebaseio.com/v0',
   };
 
-  return config;
+  // We merge the business logic's configs into AppConfig as the return value
+  return {
+    // If we directly return you config and merge it into EggAppConfig, there'll be a circulate type error
+    ...config as {},
+    ...bizConfig,
+  };
 };
 ```
 
-Simplified Version:
+**Notice: We need `egg-ts-helper` to merge the returned config type from `config.default.js` into egg's `EggAppConfig`.**
+
+When `EggAppConfig` is merged with the returned type of `config.default.ts`, we can also get the intellisenses of our customized configs in `config.default.ts` like this following:
 
 ```typescript
 // app/config/config.local.ts
-import { DefaultConfig } from './config.default';
+import { EggAppConfig, } from 'egg';
 
 export default () => {
-  const config: DefaultConfig = {};
+  const config = {} as PowerPartial<EggAppConfig>;
+  // Now we can get the intellisenses of 'news'
   config.news = {
     pageSize: 20,
   };
@@ -290,7 +289,7 @@ type PowerPartial<T> = {
 };
 ```
 
-### Plug-in
+### Plugin
 
 ```javascript
 // config/plugin.ts
@@ -310,7 +309,7 @@ export default plugin;
 ### Lifecycle
 
 ```typescript
-// app/app.ts
+// app.ts
 import { Application, IBoot } from 'egg';
 
 export default class FooBoot implements IBoot {
@@ -406,12 +405,12 @@ What we do is just to do some configs in `package.json`:
 
 ```json
 {
-  "devDependencies": {
-    "egg-ts-helper": "^1"
+  "egg": {
+    "declarations": true
   },
   "scripts": {
-    "dev": "egg-bin dev -r egg-ts-helper/register",
-    "test-local": "egg-bin test -r egg-ts-helper/register",
+    "dev": "egg-bin dev",
+    "test-local": "egg-bin test",
     "clean": "ets clean"
   }
 }
@@ -419,7 +418,7 @@ What we do is just to do some configs in `package.json`:
 
 The corresponding `d.ts` files are automatically generated in `typings/{app,config}/` during the developing period. **DO NOT modify manually in case of being overwritten**.
 
-> In the future, the tool will also support the analysis of Egg in js, which will improve the experience of js development.
+The tool nowadays can support egg projects in ts and js with intellisenses.
 
 ### Unit Test and Cov
 
@@ -450,10 +449,13 @@ Run commands as what you do before, and we've built `Error stacks and coverages`
 ```json
 {
   "name": "showcase",
+  "egg": {
+    "declarations": true
+  },
   "scripts": {
     "test": "npm run lint -- --fix && npm run test-local",
-    "test-local": "egg-bin test -r egg-ts-helper/register",
-    "cov": "egg-bin cov -r egg-ts-helper/register",
+    "test-local": "egg-bin test",
+    "cov": "egg-bin cov",
     "lint": "tslint ."
   }
 }
@@ -466,8 +468,11 @@ There's no main difference for debugging in TS, it can reach correct positions t
 ```json
 {
   "name": "showcase",
+  "egg": {
+    "declarations": true
+  },
   "scripts": {
-    "debug": "egg-bin debug -r egg-ts-helper/register",
+    "debug": "egg-bin debug",
     "debug-test": "npm run test-local -- --inspect"
   }
 }
@@ -552,22 +557,23 @@ For more detailed info:
 
 ---
 
-## Guides to the developments of Plug-in/Framework
+## Guides to the Developments of Plugin/Framework
 
 **Principles:**
 
-* DO NOT recommend to develop plug-in/framework in TS directly, we should publish them in js to npm.
-* When you write a plug-in/framework, the corresponding `index.d.ts` should be included.
-* By [Declaration Merging](https://www.typescriptlang.org/docs/handbook/declaration-merging.html) we can inject the functions of plug-in/framework into Egg.
+* DO NOT recommend to develop plugin/framework in TS directly, we should publish them in js to npm.
+* When you write a plugin/framework, the corresponding `index.d.ts` should be included.
+* By [Declaration Merging](https://www.typescriptlang.org/docs/handbook/declaration-merging.html) we can inject the functions of plugin/framework into Egg.
 * All are mounted on `egg` module, DO NOT use the outer layer.
 
-### Plug-in
+### Plugin
 
 Styles can be referred from the automatically generated `egg-ts-helper`:
 
 ```typescript
 // {plugin_root}/index.d.ts
 
+import 'egg';
 import News from '../../../app/service/News';
 
 declare module 'egg' {
@@ -597,7 +603,7 @@ declare module 'egg' {
 }
 ```
 
-### The outer framework
+### The Outer Framework
 
 Definitions:
 
@@ -606,11 +612,11 @@ Definitions:
 
 import * as Egg from 'egg';
 
-// With 'import' to include the outer framework's plug-in.
+// With 'import' to include the outer framework's plugin.
 import 'my-plugin';
 
 declare module 'egg' {
-  // Extend egg like plug-in...
+  // Extend egg like plugin...
 }
 
 // Export the whole Egg
@@ -631,3 +637,107 @@ export default class NewsService extends Service {
   }
 }
 ```
+
+## Frequently-asked questions
+
+Here're some questions asked by many people with answers one by one:
+
+### `ts` won't be loaded when running `npm start`
+
+`npm start` actually runs `egg-scripts start`, however we ONLY integrate `ts-node` in our `egg-bin`, it means ts won'be loaded until we use `egg-bin`.
+
+`egg-scripts` is the cli for PROD, and we suggest you compiling all the ts to js before running because of robustness and capbility. That's the reason why we don't suggest you using `ts-node` to run the application in PROD.
+
+On the contrary, `ts-node` can reduce the cost of management for compiled files from `tsc`in DEV, and the performance loss can almost be ignored, so `ts-node` is integrated into `egg-bin`.
+
+**In summary: Please use `tsc`to compile all ts files into js through `npm run tsc`, and then run `npm start`.**
+
+### There's no loaded objects when using egg's plugin
+
+There're mainly two reasons causing this problem:
+
+**1. No related defination `d.ts` file for the plugin**
+
+If you want to load some object into egg, you MUST follow the `Plugin / Framework Development Instructions` below by making a declaration file into your own plugin.
+
+You can also create a new declaration file to solve this problem when you are eager to deploy to PROD. Suppose I'm using the plugin of `egg-dashboard` and it has a loading object in egg's app without any declarations, so if you directly use `app.dashboard`, there'll be a type error occuring, and you want to solve it eagerly, you can create `index.d.ts` in 'typings' by writing this following:
+
+```typescript
+// typings/index.d.ts
+
+import 'egg';
+
+declare module 'egg' {
+  interface Application {
+    dashboard: any;
+  }
+}
+```
+
+Now it's solved! Of course your PRs for plugins without declaration files are welcomed to help others!
+
+**2. egg's plugin has the declaration but not loaded**
+
+If the egg's plugin has the right declaration, we need to import it exclipitly and ts can load the related object.
+
+If you use `egg-ts-helper`, it will automatically generate the exclipit importing declarations according to what plugins you've enabled in the application. If you don't use that, you have to import the declaration of plugins manually.
+
+```typescript
+// typings/index.d.ts
+
+import 'egg-dashboard';
+```
+
+**Notice: You MUST use 'import' in `d.ts`, because most of egg's plugins are without main entry points. There'll be errors occuring if you import directly in ts.**
+
+### `paths` is invalid in `tsconfig.json`
+
+Strictly speaking, this has nothing to do with egg but with many people's questions, and we'll give our answer to it. The reason is `tsc` WON'T convert the import path when compiling ts to js, so when you config `paths` in `tsconfig.json` and if you use `paths` to import the related modules, you are running the high risk that you cannot find them when compiled to js.
+
+The solution is either you don't use `paths`, or you can ONLY import some declarations instead of detailed values. Another way is that you can use [tsconfig-paths](https://github.com/dividab/tsconfig-paths) to hook the process logic in node's path module to support `paths` in `tsconfig.json`.
+
+You can directly import `tsconfig-paths` in `config/plugin.ts`, because `plugin.ts` is ALWAYS loaded firstly in both App and Agent.
+
+```typescript
+// config/plugin.ts
+
+import 'tsconfig-paths/register';
+
+...
+```
+
+### How to write unit tests for declarations of egg's plugins?
+
+Many contributors don't know how to write unit tests for their plugin's declaration files, so we also have a discussion about it here:
+
+When you finish writing a declaration for an egg's plugin, you can write your own application in `test/fixures` (you can refer [https://github.com/eggjs/egg-view/tree/master/test/fixtures/apps/ts](https://github.com/eggjs/egg-view/tree/master/test/fixtures/apps/ts)). Do remember to add `paths`configs into `tsconfig.json` to do imports in the fixture. Take `egg-view` as an example:
+
+```json
+    "paths": {
+      "egg-view": ["../../../../"]
+    }
+```
+
+Do remember DO NOT CONFIG `"skipLibCheck": true` in the `tsconfig.json`, and if you set it to true, `tsc`will ignore the type checks when compiling, and there's no meaning for unit tests for your plugin's declarations.
+
+In the end, add a test case to check whether your declaration works properly or not. See `egg-view` example below:
+
+```js
+  describe('typescript', () => {
+    it('should compile ts without error', () => {
+      return coffee.fork(
+        require.resolve('typescript/bin/tsc'),
+        [ '-p', path.resolve(__dirname, './fixtures/apps/ts/tsconfig.json') ]
+      )
+        // .debug()
+        .expect('code', 0)
+        .end();
+    });
+  });
+```
+
+Some other unit test projects as your references:
+
+ - [https://github.com/eggjs/egg](https://github.com/eggjs/egg)
+ - [https://github.com/eggjs/egg-view](https://github.com/eggjs/egg-view)
+ - [https://github.com/eggjs/egg-logger](https://github.com/eggjs/egg-logger)

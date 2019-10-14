@@ -73,7 +73,7 @@ exports.io = {
 exports.io = {
   redis: {
     host: { redis server host },
-    port: { redis server prot },
+    port: { redis server port },
     auth_pass: { redis server password },
     db: 0,
   },
@@ -198,7 +198,7 @@ const tick = (id, msg) => {
 module.exports = app => {
   return async (ctx, next) => {
     if (true) {
-      ctx.socket.disconnet();
+      ctx.socket.disconnect();
       return;
     }
     await next();

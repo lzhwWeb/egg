@@ -22,10 +22,10 @@ In addition, it's relatively inefficient to transmit data via messenger, since m
 
 So is there any better way? The answer is: YES! We provide a new type of model to reduce the complexity of this type of client encapsulation. The new Model bypasses the Master by establishing a direct socket between Agent and Worker. And as an external interface, Agent maintains shared connection among multiple Worker processes.
 
-## core idea
+## Core Idea
 
-- Inspired by the [Leader/Follower](http://www.cs.wustl.edu/~schmidt/PDF/lf.pdf) model.
-- The client is divided into two roles: 
+- Inspired by the [Leader/Follower](https://www.dre.vanderbilt.edu/~schmidt/PDF/lf.pdf) model.
+- The client is divided into two roles:
   - Leader: Be responsible for maintaining the connection with the remote server, only one Leader for the same type of client.
   - Follower: Delegate specific operations to the Leader. A common way is Subscribe-Model (let the Leader interact with remote server and wait for its return).
 - How to determine who Leader is, who Follower is? There are two modes:
@@ -56,7 +56,7 @@ win /   +------------------+  \ lose
 +--------+         +-------------------+
 ```
 
-## Client interface type abstraction
+## Client Interface Type Abstraction
 
 We abstract the client interface into the following two broad categories, which is also a specification of the client interface. For clients that are in line with norms, we can automatically wrap it as Leader / Follower mode.
 
@@ -108,12 +108,12 @@ class Client extends Base {
 }
 ```
 
-## exception handling
+## Exception Handling
 
 - If Leader "dies", a new round of port contention will be triggered. The instance which seizes the port will be elected as the new Leader.
 - To ensure that the channel between Leader and Follower is healthy, heartbeat mechanism needs to be introduced. If the Follower does not send a heartbeat packet within a fixed time, the Leader will proactively disconnect from the Follower, which will trigger the reinitialization of Follower.
 
-## protocol and time series to invoke
+## Protocol and Time Series to Invoke
 
 Leader and Follower exchange data via the following protocols:
 
@@ -159,7 +159,7 @@ Leader and Follower exchange data via the following protocols:
       |                                                   |
 ```
 
-## specific use
+## Specific Usage
 
 In the following I will use a simple example to introduce how to make a client support Leader / Follower mode in the framework.
 
@@ -173,7 +173,7 @@ const Base = require('sdk-base');
 class RegistryClient extends Base {
   constructor(options) {
     super({
-      // Specify a method for asynchronous start 
+      // Specify a method for asynchronous start
       initMethod: 'init',
     });
     this._options = options;
@@ -494,7 +494,7 @@ in conclusion:
 
 Students who are interested may have look at [enhanced multi-process development model](https://github.com/eggjs/egg/issues/322) discussion process.
 
-## the configuration items related to cluster-client in the framework 
+## The Configuration Items Related to Cluster-Client in the Framework
 
 ```js
 /**

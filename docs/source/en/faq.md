@@ -10,12 +10,12 @@ Thank you for reporting an issue.
 1. It's RECOMMENDED to submit PR for typo or tiny bug fix.
 2. If this's a FEATURE request, please provide: details, pseudo codes if necessary.
 3. If this's a BUG, please provide: course repetition, error log and configuration. Fill in as much of the template below as you're able.
-4. **It will be nice to use `egg-init --type=simple bug` to provide a mini GitHub repository which can reproduce the issue.**
+4. **It will be nice to use `npm init egg --type=simple bug` to provide a mini GitHub repository which can reproduce the issue.**
 
 Most importantly, please understand one thing: the relationship between the `user` and `the maintainer of open source project` is not `Buyer` and `Seller`, the issue is not a customer order either.
 When you're opening an issue, please hold a mentality of "working together to solve this problem." Do not expect us to serve you unilaterally.
 
-## Why my config don't work?
+## Why does my config not work?
 
 Framework [Config](./basics/config.md) settings is powerfull, support different environments and different places(framework, plugins, app).
 
@@ -37,9 +37,9 @@ module.exports = appInfo => {
 
 By default, logs will print at `${baseDir}/logs`(baseDir is project's base directory) in local environment.But in non-development environments(neither local nor unittest), the logs will print at `$HOME/logs`(such as `/home/admin/logs`). So the logs won't mix in during development and locate in the same place when run in production environment.
 
-## Why not choose PM2 as process management tool?
+## Why not choose `PM2` as the process management tool?
 
-1. PM2 itself is too complex to issue problems if any.
+1. `PM2` itself is too complex to issue problems if any.
 2. Deep optimization could be difficlut to achieve if choosing PM2.
 3. Pattern like one leader process communicating with remote services, along with serveral follower processes delegating request to it ([Cluster](./core/cluster-and-ipc.md)), is a rigid demand for reducing connections and data exchange load, espeically when facing applications in very large scale. egg originates from Ant Financial Group and Alibaba Group, we start with applications in that scale at first, so we take these goals into consideration. All of these goals above could be hard to achieve with PM2.
 
@@ -68,7 +68,7 @@ We can start application with PM2 like this:
 pm2 start server.js
 ```
 
-## How to resolve csrf error?
+## How to resolve `csrf` error?
 
 There are two kinds of common csrf errors:
 
@@ -79,7 +79,7 @@ By default [egg-security](https://github.com/eggjs/egg-security/) plugin built i
 
 The error will disappear in the presence of correct csrf token in request. For more implentation details, see [./core/security.md#csrf].
 
-## In local development environment, why is worker process not restarted automatically when files are modified?
+## In local development Environment, why is worker process not restarted automatically when files are modified?
 
 Usually this happens when you are using Jetbrains softwares(IntelliJ IDEA, WebStorm, etc.) with `Safe Write` turned on.
 

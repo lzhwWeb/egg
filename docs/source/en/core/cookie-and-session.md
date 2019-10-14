@@ -154,6 +154,20 @@ exports.deleteSession = function* (ctx) {
 };
 ```
 
+What you need to pay special attention to is that you need to avoid the following situations when setting session properties (which can cause field loss, See for details [koa-session source code](https://github.com/koajs/session/blob/master/lib/session.js#L37-L47)):
+
+* Don't start with `_`
+* Don't use `isNew`
+
+```js
+// ❌ Wrong way
+ctx.session._visited = 1;   //   --> property will lost
+ctx.session.isNew = 'HeHe'; //   --> session keyword, should not write it
+
+// ✔️ Right way
+ctx.session.visited = 1;    //   -->  Everything is all right
+```
+
 Session is built on top of Cookie.
 By default, the content of Session is stored in a Cookie field as encrypted string.
 Every time a client sends requests to server, the cookie is attached in requests.
@@ -174,7 +188,7 @@ The attributes except of `key` are all standard Cookie attributes.
 With default config, the session cookie is encrypted, not accessible to JS,
 which ensures user cannot access or modify it.
 
-### Store session in other storage
+### Store Session in Other Storage
 
 Session is stored in Cookie by default.
 If a session is too big, there are some troubles.
@@ -228,7 +242,7 @@ Do not put per-user's data cache in Session.**
 
 ### Session Practice
 
-#### Set session's expiration time
+#### Set Session's Expiration Time
 
 Session config has a attribute `maxAge`, which controls global expiration time of all sessions of the application.
 
@@ -252,7 +266,7 @@ class UserController extends Controller {
 }
 ```
 
-#### Extend session's expiration time
+#### Extend Session's Expiration Time
 
 By default, if user requests don't result in modification of Session,
 egg.js doesn't extend expiration time of the session.

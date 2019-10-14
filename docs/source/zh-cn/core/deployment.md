@@ -68,7 +68,10 @@ $ egg-scripts start --port=7001 --daemon --title=egg-server-showcase
 - `--title=egg-server-showcase` 用于方便 ps 进程时 grep 用，默认为 `egg-server-${appname}`。
 - `--framework=yadan` 如果应用使用了[自定义框架](../advanced/framework.md)，可以配置 `package.json` 的 `egg.framework` 或指定该参数。
 - `--ignore-stderr` 忽略启动期的报错。
-- 所有 [egg-cluster] 的 Options 都支持透传，如 `--https` 等。
+- `--https.key` 指定 HTTPS 所需密钥文件的完整路径。
+- `--https.cert` 指定 HTTPS 所需证书文件的完整路径。
+
+- 所有 [egg-cluster] 的 Options 都支持透传，如 `--port` 等。
 
 更多参数可查看 [egg-scripts] 和 [egg-cluster] 文档。
 
@@ -113,6 +116,8 @@ $ egg-scripts stop [--title=egg-server]
 - [NSolid](https://nodesource.com/products/nsolid/)
 
 ### Node.js 性能平台（alinode）
+
+**注意：** Node.js 性能平台 (alinode) 目前仅支持 macOS 和 Linux，不支持 Windows。
 
 [Node.js 性能平台](https://www.aliyun.com/product/nodejs) 是面向所有 Node.js 应用提供 `性能监控、安全提醒、故障排查、性能优化` 等服务的整体性解决方案，提供完善的工具链和服务，协助开发者快速发现和定位线上问题。
 
@@ -175,7 +180,11 @@ exports.alinode = {
 ```bash
 $ [master] node version v8.9.4
 $ [master] alinode version v3.8.4
+$ [Tue Aug 06 2019 15:54:25 GMT+0800 (China Standard Time)] Connecting to wss://agentserver.node.aliyun.com:8080...
+$ [Tue Aug 06 2019 15:54:26 GMT+0800 (China Standard Time)] agent register ok.
 ```
+
+其中 `agent register ok.` 表示配置的 `egg-alinode` 正确连接上了 Node.js 性能平台服务器。
 
 #### 访问控制台
 
